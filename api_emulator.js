@@ -1,24 +1,72 @@
 // @ts-nocheck
+import fs from "fs";
+import path from "path";
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import path from "path";
+import { pathToFileURL } from "url";
 
 const isDev = process.env.NODE_ENV !== "production";
 const app = express();
+
+function watchApi(dir, onReload) {
+    fs.watch(dir, { recursive: true }, async (eventType, filename) => {
+        console.log(`API changed: ${filename}`);
+        try {
+            const apiTokens = await loadApiToken(dir);
+            onReload(apiTokens);
+        } catch (err) {
+            console.error("Reload failed:", err);
+        }
+    });
+}
+
+// Load all emulated Api handlers from a directory.
+async function loadApiToken(dir) {
+    console.log(`Initializing Api's from '${dir}'`);
+    const files = fs.readdirSync(dir);
+
+    const map = {};
+
+    for (const file of files) {
+        console.log(`Creating Api token from '${file}'`);
+        const fullPath = path.join(dir, file);
+
+        const module = await import(
+            pathToFileURL(fullPath)//.href + `?update=${Date.now()}`
+        );
+
+        // Strip file extension
+        const apiToken = path.basename(file, ".js");
+        map[apiToken] = module.default;
+    }
+
+    return map;
+}
+
+// Allow Vite-like hot reloading.
+const apiTokens = "./api_tokens";
+let apiHandlers = await loadApiToken(apiTokens);
+watchApi(apiTokens, (newHandlers) => {
+    apiHandlers = newHandlers;
+});
 
 async function serverBoot() {
     let vite;
 
     console.log("Booting server...");
 
-    // --- Fake API route ---
-    app.get("/api-emulator/*graphIdentity", (req, res) => {
-        const { graphIdentity } = req.params;
-        console.log(`Api emulator recieved: '${graphIdentity}'`);
-        return res.json({
-            name: graphIdentity,
-            time: new Date(),
-        });
+    // Initialize emulated api.
+    app.get("/api-emulator/*apiToken", (req, res) => {
+        const { apiToken } = req.params;
+        console.log(`Api token: '${apiToken}'.`);
+
+        let callback = apiHandlers[apiToken];
+        if (callback) {
+            let data = callback();
+            return res.json(data);
+        } else {
+            throw new Error("Invalid Api token.");
+        }
     });
 
     if (isDev) {
@@ -47,8 +95,10 @@ async function serverBoot() {
         }
     });
 
-    const port = process.env.PORT || 3000;
-    app.listen(port, () => console.log(`App running on http://localhost:${port}`));
+    // Set up local host.
+    const port = process.env.PORT || 6767;
+    let log = `App running on http://localhost:${port}`;
+    app.listen(port, () => console.log(log));
 }
 
 serverBoot();

@@ -11,10 +11,12 @@ function HomePage() {
 }
 
 createRoot(document.getElementById('root')!).render(
-    <BrowserRouter>
-        <Routes>
-            <Route path='/' element ={<HomePage />} />
-            <Route path='/graphs/:graphIdentity' element = { <GraphRenderer /> } />
-        </Routes>
-    </BrowserRouter>,
+    <>
+        <BrowserRouter>
+            <Routes>
+                <Route path='/' element ={<HomePage />} />
+                <Route path='/graphs/:graphIdentity' element = { <GraphRenderer /> } />
+            </Routes>
+        </BrowserRouter>
+    </>
 )
