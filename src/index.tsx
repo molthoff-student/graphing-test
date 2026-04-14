@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
-import { GraphRenderer } from './graph_renderer';
+import { GraphSlug } from './graph';
 
 function HomePage() {
     
@@ -15,7 +15,7 @@ createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
             <Routes>
                 <Route path='/' element ={<HomePage />} />
-                <Route path='/graphs/:graphIdentity' element = { <GraphRenderer /> } />
+                <Route path='/graphs/:graphIdentity' element = { <GraphSlug /> } />
             </Routes>
         </BrowserRouter>
     </>

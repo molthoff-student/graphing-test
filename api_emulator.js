@@ -32,7 +32,7 @@ async function loadApiToken(dir) {
         const fullPath = path.join(dir, file);
 
         const module = await import(
-            pathToFileURL(fullPath)//.href + `?update=${Date.now()}`
+            pathToFileURL(fullPath)
         );
 
         // Strip file extension
@@ -58,7 +58,7 @@ async function serverBoot() {
     // Initialize emulated api.
     app.get("/api-emulator/*apiToken", (req, res) => {
         const { apiToken } = req.params;
-        console.log(`Api token: '${apiToken}'.`);
+        //console.log(`Api token: '${apiToken}'.`);
 
         let callback = apiHandlers[apiToken];
         if (callback) {

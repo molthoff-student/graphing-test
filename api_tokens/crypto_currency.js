@@ -1,45 +1,52 @@
-// Generate random value between min and max.
+// Generate random value
+let trend = 0.000001;
 const getRandomValue = () => {
-    let multiplier = 1;
+    const volatility = 0.02;
 
-    const min = multiplier * -1;
-    const max = multiplier;
+    // slowly changing trend
+    //trend += (Math.random() - 0.5) * 0.001;
 
-    let value = Math.random() * (max - min) + min
+    const u = Math.random();
+    const v = Math.random();
+    const normal = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 
-    return value;
-}
+    return Math.exp(trend + normal * volatility);
+};
 
 // Generate item graph based off of previous values.
 let previousValue = 10;
 function generateItem(ms) {
     let valueChange = getRandomValue();
-    let nextValue = previousValue + valueChange;
+    let nextValue = previousValue * valueChange;
     previousValue = nextValue;
     return {
         date: ms,
-        value: previousValue
+        value: nextValue
     };
 }
 
 // Precision in ms.
-const precisionFactor = 1000;
+const precisionFactor = 250;
 
 let previousDate = null;
 export default () => {
     if (previousDate === null) {
         previousDate = Date.now();
     }
-    let newDate = Date.now();
-    let dateDifference = newDate - previousDate;
+
+    const oldDate = previousDate;
+    const newDate = Date.now();
+    const dateDifference = newDate - oldDate;
+
     previousDate = newDate;
 
     let statistics = [];
+
     for (let ms = 0; ms < dateDifference; ms += precisionFactor) {
-        let msec = previousDate + ms;
+        let msec = oldDate + ms;
         let item = generateItem(msec);
         statistics.push(item);
     }
 
-    return statistics
+    return statistics;
 }
