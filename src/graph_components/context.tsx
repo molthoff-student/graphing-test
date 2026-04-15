@@ -12,7 +12,7 @@ export type GraphRecord = {
 }
 
 export type GraphTimeLine = {
-    from?: number,
+    time: number,
     till?: number,
 }
 
@@ -71,8 +71,11 @@ export function useGraphContext() {
     return context;
 }
 
+const SEC = 1000;
+const MIN = SEC * 60;
+const HRS = MIN * 60;
 export const DEFAULT_DATES: GraphTimeLine = {
-    from: null,
+    time: HRS,
     till: null
 }
 

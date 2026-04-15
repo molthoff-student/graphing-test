@@ -26,8 +26,6 @@ function binSearch(
     return Math.max(0, Math.min(result, data.length - 1));
 }
 
-
-
 // Main function to draw the graph itself.
 const drawGraph = (
     canvas: HTMLCanvasElement, 
@@ -63,10 +61,10 @@ const drawGraph = (
     ctx.moveTo(0, startY);
 
     graph.forEach((item, index) => {
-        const x = index * stepSize;
 
-        const normalized = (item.value - min) / range;
-        const y = drawBottom - normalized * drawHeight;
+        const n = (item.value - min) / range;
+        const x = index * stepSize;
+        const y = drawBottom - n * drawHeight;
 
         ctx.lineTo(x, y);
     });
@@ -87,7 +85,7 @@ export function GraphRenderer({ apiLink }: GraphRenderProps) {
         graphSettings, //setGraphSettings
         graphData, setGraphData
     } = useGraphContext();
-    //const [graphData, setGraphData] = useState([] as GraphPoint[]);
+
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     const updateGraphData = async () => {
@@ -129,19 +127,19 @@ export function GraphRenderer({ apiLink }: GraphRenderProps) {
 
         const dates = graphData.map(p => p.date);
 
-        const fromDate = graphTimeLine.from ?? graphData[0].date;
         const tillDate = graphTimeLine.till ?? graphData[graphData.length - 1].date;
+        const fromDate = tillDate - graphTimeLine.time;
 
-        const fromIdx = binSearch(dates, fromDate, (value, target) => value < target) + 1;
         const tillIdx = binSearch(dates, tillDate, (value, target) => value <= target);
+        const fromIdx = binSearch(dates, fromDate, (value, target) => value < target) + 1;
 
         if (fromIdx >= tillIdx) return [graphData, DEFAULT_RECORD];
 
         let lastKept = graphData[fromIdx];
         const result: GraphPoint[] = [lastKept];
 
-        let min = lastKept.value;//+Infinity;
-        let max = lastKept.value;//-Infinity;
+        let min = lastKept.value; //+Infinity;
+        let max = lastKept.value; //-Infinity;
 
         for (let idx = fromIdx + 1; idx <= tillIdx; idx++) {
             const point = graphData[idx];
@@ -152,10 +150,10 @@ export function GraphRenderer({ apiLink }: GraphRenderProps) {
 
             const delta = Math.abs(value - lastKept.value);
 
-            if (delta > threshold) {
-                result.push(point);
-                lastKept = point;
-            }
+            if (delta < threshold) continue;
+
+            result.push(point);
+            lastKept = point;
         }
 
         let avg = (min + max) / 2;
@@ -211,8 +209,9 @@ export function GraphRenderer({ apiLink }: GraphRenderProps) {
             .toString().padStart(2,"0")}.${date.getMilliseconds()
             .toString().padStart(3,"0")}`;
     }
-    const fromLog = `From: ${formatTimestamp(graphTimeLine.from ?? graphData[0]?.date)}`
-    const tillLog = `Till: ${formatTimestamp(graphTimeLine.till ?? graphData[graphData.length - 1]?.date)}`
+    
+    const fromLog = `From: ${formatTimestamp(graphView[0]?.date ?? 0)}`
+    const tillLog = `Till: ${formatTimestamp(graphView[graphView.length - 1]?.date ?? 0)}`
     return (
         <>
             <canvas
