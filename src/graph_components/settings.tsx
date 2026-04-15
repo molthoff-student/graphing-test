@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useGraphContext, type GraphTimeLine } from "./context";
 
 export function GraphSliders() {
@@ -31,7 +31,8 @@ export function GraphSliders() {
     }
 
     const value = max > 0 ? graphTimeLine.time : 0;
-    console.log(`value: ${value}`);
+    //console.log(`value: ${value}`);
+
     return (
         <div>
             <input 
