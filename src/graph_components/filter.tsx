@@ -1,4 +1,4 @@
-import { type GraphPoint, type GraphRecord } from "./context";
+import { DEFAULT_RECORD, type GraphPoint, type GraphRecord } from "./context";
 
 type filteredGraph = {
     result: GraphPoint[],
@@ -10,21 +10,19 @@ function slicedGraphPoints(
     from: number,
     length: number
 ): filteredGraph {
-
-    let min = +Infinity;
-    let max = -Infinity;
-    
+   
+    let record: GraphRecord = { ...DEFAULT_RECORD };
     const result: GraphPoint[] = new Array(length);
+
     for (let idx = 0; idx < length; idx++) {
         const point = data[idx + from];
         const value = point.value;
-        if (value < min) min = value;
-        if (value > max) max = value;
+        if (value < record.min.value) record.min = point;
+        if (value > record.max.value) record.max = point;
         result[idx] = point;
     }
 
-    let avg = (min + max) / 2;
-    const record = {min, avg, max};
+    record.avg = (record.min.value + record.max.value) / 2;
     return { result, record};
 }
 
@@ -58,8 +56,11 @@ export function downsampleGraphPoints(
 
     result[sampledCount++] = data[previousSelectedIndex];
 
-    let min = +Infinity;
-    let max = -Infinity;
+    let record: GraphRecord = {
+        min: { date: 0, value: Infinity },
+        avg: 0,
+        max: { date: 0, value: -Infinity }
+    };
 
     for (let bucketIndex = 0; bucketIndex < size - 2; bucketIndex++) {
 
@@ -98,11 +99,13 @@ export function downsampleGraphPoints(
         const prevValue = data[prevIndex].value;
 
         for (let i = currentStart; i < currentEnd; i++) {
-            const candidateValue = data[i].value;
 
-            if (candidateValue < min) min = candidateValue;
-            if (candidateValue > max) max = candidateValue;
+            const candidate = data[i];
+            const candidateValue = candidate.value;
 
+            if (candidateValue < record.min.value) record.min = candidate;
+            if (candidateValue > record.max.value) record.max = candidate;
+            
             const area =
                 (prevIndex - avgIndex) 
                 * (candidateValue - prevValue)
@@ -124,8 +127,7 @@ export function downsampleGraphPoints(
 
     result[sampledCount++] = data[till];
 
-    let avg = (min + max) / 2;
-    const record = {min, avg, max};
+    record.avg = (record.min.value + record.max.value) / 2;
 
     return { result, record };
 }

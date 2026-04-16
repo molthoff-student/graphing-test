@@ -1,54 +1,111 @@
 import { useMemo } from "react";
-import { useGraphContext, type GraphTimeLine } from "./context";
+import { useGraphContext } from "./context";
 
 export function GraphSliders() {
-    const { 
-        graphTimeLine, setGraphTimeLine,
+    const {
+        graphTimeLine,
+        setGraphTimeLine,
         graphData
     } = useGraphContext();
 
-    const [min, max] = useMemo<[number, number]>(() => {
+    const [min, max] = useMemo(() => {
         const n = graphData.length - 1;
-        if (0 < n) {
-            return [
-                graphData[0].date, 
-                graphData[n].date
-            ];
-        } else {
-            return [0, 0];
-        }
+        if (n < 0) return [0, 0];
+
+        return [
+            graphData[0].date,
+            graphData[n].date
+        ];
     }, [graphData]);
 
-    const changeTimeLine = (
-        key: keyof GraphTimeLine,
-        value: number
-    ) => {
-        setGraphTimeLine(prev => {
-            const next = { ...prev };
-            next[key] = value;
-            return next;
-        });
-    }
+    const end = graphTimeLine.till ?? max;
 
-    const value = max > 0 ? graphTimeLine.time : 0;
-    //console.log(`value: ${value}`);
+    //const range = max - min;
+
+    const maxLookback = Math.max(0, end - min);
+
+    const isLive = graphTimeLine.till === null;
+
+    const lookbackValue = Math.min(
+        graphTimeLine.time,
+        maxLookback
+    );
+
+    const onLookbackChange = (e) => {
+        const next = Number(e.target.value);
+
+        setGraphTimeLine(prev => ({
+            ...prev,
+            time: Math.min(next, maxLookback)
+        }));
+    };
+
+    const tillValue = end;
+
+    const onTillChange = (e) => {
+        const nextTill = Number(e.target.value);
+
+        setGraphTimeLine(prev => ({
+            ...prev,
+            till: nextTill
+        }));
+    };
+
+    const toggleLive = (checked) => {
+        setGraphTimeLine(prev => ({
+            ...prev,
+            till: checked ? null : max
+        }));
+    };
 
     return (
+        <div
+        style={{
+            display: "grid",
+            gridTemplateColumns: "2fr 2fr auto",
+            gap: 12,
+            alignItems: "center"
+        }}
+        >
+        {/* LOOKBACK SLIDER */}
         <div>
-            <input 
+            <label>Zoom</label>
+            <input
+                type="range"
+                min={0}
+                max={maxLookback}
+                value={lookbackValue}
+                onChange={onLookbackChange}
+                style={{ width: "100%" }}
+            />
+        </div>
+
+        {/* TILL SLIDER */}
+        <div>
+            <label>Till</label>
+            <input
+                type="range"
                 min={min}
                 max={max}
-                value={value}
-                onChange={(e) => {
-                    let value = Number(e.target.value);
-                    console.log(`onChange: ${value}`);
-                    if (!Number.isFinite(value)) return;
-                    changeTimeLine('time', value);
-                }}
+                value={tillValue}
+                onChange={onTillChange}
+                style={{ width: "100%" }}
             />
+        </div>
+
+        {/* LIVE CHECKBOX */}
+        <label style={{ whiteSpace: "nowrap" }}>
+            <input
+                type="checkbox"
+                checked={isLive}
+                onChange={(e) => toggleLive(e.target.checked)}
+            />
+            Live
+        </label>
         </div>
     );
 }
+
 
 export function GraphSettings() {
     const { graphSettings, setGraphSettings } = useGraphContext();

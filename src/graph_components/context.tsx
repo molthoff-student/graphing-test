@@ -6,13 +6,13 @@ export type GraphPoint = {
 }
 
 export type GraphRecord = {
-    max: number,
-    min: number,
+    min: GraphPoint,
     avg: number,
+    max: GraphPoint,
 }
 
 export type GraphTimeLine = {
-    time: number,
+    time?: number,
     till?: number,
 }
 
@@ -21,7 +21,9 @@ export type GraphSetting = {
     zoomLevel: number,
     widthModifier: number,
     heightModifier: number,
-    chartPadding: number
+    widthPadding: number,
+    heightPadding: number,
+    //chartPadding: number
 }
 
 export type GraphInformation = {
@@ -80,14 +82,15 @@ export const DEFAULT_DATES: GraphTimeLine = {
 }
 
 export const DEFAULT_RECORD: GraphRecord = {
-    max: -Infinity, 
-    min: +Infinity,
-    avg: 0,
+    min: { date: 0, value: +Infinity },
+    avg: 0, 
+    max: { date: 0, value: -Infinity }
 }
 
 export const DEFAULT_SETTINGS: GraphSetting = {
-    zoomLevel: 10000,
+    zoomLevel: 2000,
     widthModifier: 0.80,
-    heightModifier: 1.00,
-    chartPadding: 0.1
+    heightModifier: 0.1,
+    widthPadding: 10,
+    heightPadding: 10,
 }
