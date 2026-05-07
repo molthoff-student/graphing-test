@@ -1,6 +1,13 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useGraphContext } from "./context";
 
+type GraphSliderData = {
+    name: string,
+    min: number,
+    max: number,
+    value: number,
+    onChange: React.ChangeEventHandler<HTMLInputElement>,
+}
 export function GraphSliders() {
     const {
         graphTimeLine,
@@ -9,102 +16,239 @@ export function GraphSliders() {
     } = useGraphContext();
 
     const [min, max] = useMemo(() => {
-        const n = graphData.length - 1;
-        if (n < 0) return [0, 0];
-
+        if (graphData.length < 2) return [0, 0];
         return [
             graphData[0].date,
-            graphData[n].date
+            graphData[graphData.length - 1].date
         ];
     }, [graphData]);
 
-    const end = graphTimeLine.till ?? max;
+    const tillValue = graphTimeLine.till ?? max;
+    const diffValue = graphTimeLine.from !== null ? tillValue - graphTimeLine.from! : graphTimeLine.diff;
+    const toggle = graphTimeLine.from !== null;
 
-    //const range = max - min;
+    const changeTill = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const num = Number(event.target.value);
+        if (!Number.isFinite(num)) return;
 
-    const maxLookback = Math.max(0, end - min);
+        const newTill = num === max ? null : num;
 
-    const isLive = graphTimeLine.till === null;
+        setGraphTimeLine(prev => {
+            const till = newTill ?? max;
 
-    const lookbackValue = Math.min(
-        graphTimeLine.time,
-        maxLookback
-    );
+            const from = prev.from;
+            const newFrom =
+                from !== null
+                    ? Math.max(min, till - prev.diff)
+                    : null;
 
-    const onLookbackChange = (e) => {
-        const next = Number(e.target.value);
-
-        setGraphTimeLine(prev => ({
-            ...prev,
-            time: Math.min(next, maxLookback)
-        }));
+            return {
+                ...prev,
+                till: newTill,
+                from: newFrom,
+                diff: newFrom !== null
+                    ? till - newFrom
+                    : prev.diff
+            };
+        });
     };
 
-    const tillValue = end;
+    const changeDiff = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Number(event.target.value);
+        if (!Number.isFinite(value)) return;
 
-    const onTillChange = (e) => {
-        const nextTill = Number(e.target.value);
+        setGraphTimeLine(prev => {
+            const till = prev.till ?? max;
 
-        setGraphTimeLine(prev => ({
-            ...prev,
-            till: nextTill
-        }));
+            const newFrom =
+                prev.from !== null
+                    ? Math.max(min, till - value)
+                    : null;
+
+            return {
+                ...prev,
+                diff: value,
+                from: newFrom
+            };
+        });
     };
 
-    const toggleLive = (checked) => {
+    useEffect(() => {
+        if (graphTimeLine.from === null) return;
+
+        const till = graphTimeLine.till ?? max;
+        const expectedDiff = till - graphTimeLine.from;
+
+        if (graphTimeLine.diff !== expectedDiff) {
         setGraphTimeLine(prev => ({
             ...prev,
-            till: checked ? null : max
+            diff: till - prev.from!
         }));
-    };
+        }
+    }, [graphTimeLine.from, graphTimeLine.till, max]);
+
+    const sliders: GraphSliderData[] = [
+        {
+            name: "Till",
+            min,
+            max,
+            value: tillValue,
+            onChange: changeTill
+        },
+        {
+            name: "Diff",
+            min: 0,
+            max: Math.max(0, tillValue - min),
+            value: diffValue,
+            onChange: changeDiff
+        }
+    ];
+
+    //console.log(JSON.stringify(graphTimeLine));
 
     return (
-        <div
-        style={{
-            display: "grid",
-            gridTemplateColumns: "2fr 2fr auto",
-            gap: 12,
-            alignItems: "center"
-        }}
-        >
-        {/* LOOKBACK SLIDER */}
-        <div>
-            <label>Zoom</label>
-            <input
-                type="range"
-                min={0}
-                max={maxLookback}
-                value={lookbackValue}
-                onChange={onLookbackChange}
-                style={{ width: "100%" }}
-            />
-        </div>
+        <>
+            {sliders.map((slider) => (
+                <div key={slider.name}>
+                    <label>{slider.name}</label>
+                    <input
+                        type="range"
+                        min={slider.min}
+                        max={slider.max}
+                        value={slider.value}
+                        onChange={slider.onChange}
+                        style={{ width: "100%" }}
+                    />
+                </div>
+            ))}
 
-        {/* TILL SLIDER */}
-        <div>
-            <label>Till</label>
-            <input
-                type="range"
-                min={min}
-                max={max}
-                value={tillValue}
-                onChange={onTillChange}
-                style={{ width: "100%" }}
-            />
-        </div>
-
-        {/* LIVE CHECKBOX */}
-        <label style={{ whiteSpace: "nowrap" }}>
             <input
                 type="checkbox"
-                checked={isLive}
-                onChange={(e) => toggleLive(e.target.checked)}
+                checked={toggle}
+                onChange={(event) => {
+                    const checked = event.target.checked;
+
+                    setGraphTimeLine(prev => {
+                        const till = prev.till ?? max;
+
+                        const newFrom = checked
+                            ? Math.max(min, till - prev.diff)
+                            : null;
+
+                        return {
+                            ...prev,
+                            from: newFrom,
+                            diff: newFrom !== null
+                                ? till - newFrom
+                                : prev.diff
+                        };
+                    });
+                }}
             />
-            Live
-        </label>
-        </div>
+        </>
     );
 }
+// export function GraphSliders() {
+//     const {
+//         graphTimeLine,
+//         setGraphTimeLine,
+//         graphData
+//     } = useGraphContext();
+
+//     const [min, max] = useMemo(() => {
+//         if (graphData.length < 2) return [0, 0];
+//         return [
+//             graphData[0].date,
+//             graphData[graphData.length - 1].date
+//         ];
+//     }, [graphData])
+
+//     const tillValue = graphTimeLine.till ?? max;
+//     const changeTill = (event: React.ChangeEvent<HTMLInputElement>) => {
+//         const num = Number(event.target.value);
+//         if (!Number.isFinite(num)) return;
+
+//         const newTill = num === max ? null : num;
+
+//         setGraphTimeLine(prev => {
+//             const till = newTill ?? max;
+
+//             return {
+//                 ...prev,
+//                 till: newTill,
+//                 from: prev.from !== null
+//                     ? Math.max(min, till - prev.diff)
+//                     : prev.from
+//             };
+//         });
+//     };
+
+//     const toggle = graphTimeLine.from !== null;
+
+//     const diffValue = graphTimeLine.diff;
+//     const changeDiff = (event: React.ChangeEvent<HTMLInputElement>) => {
+//         const value = Number(event.target.value);
+//         if (!Number.isFinite(value)) return;
+
+//         setGraphTimeLine(prev => {
+//             const till = prev.till ?? max;
+
+//             return {
+//                 ...prev,
+//                 diff: value,
+//                 from: prev.from !== null
+//                     ? Math.max(min, till - value)
+//                     : prev.from
+//             };
+//         });
+//     };
+
+//     console.log(JSON.stringify(graphTimeLine));
+
+//     const sliders: GraphSliderData[] = [
+//         { name: "Till", min, max, value: tillValue, onChange: changeTill },
+//         { name: "Diff", min: 0, max: Math.max(0, tillValue - min), value: diffValue, onChange: changeDiff }
+//     ];
+
+//     return (
+//         <>
+//             {sliders.map((slider) => {
+//                 return (
+//                     <div key={slider.name}>
+//                         <label>{slider.name}</label>
+//                         <input
+//                             type="range"
+//                             min={slider.min}
+//                             max={slider.max}
+//                             value={slider.value}
+//                             onChange={slider.onChange}
+//                             style={{ width: "100%" }}
+//                         />
+//                     </div>
+//                 );
+//             })}
+//             <label></label>
+//             <input
+//                 type="checkbox"
+//                 checked={toggle}
+//                 onChange={(event) => {
+//                     const checked = event.target.checked;
+
+//                     setGraphTimeLine(prev => {
+//                         const till = prev.till ?? max;
+
+//                         return {
+//                             ...prev,
+//                             from: checked
+//                                 ? Math.max(min, till - prev.diff)
+//                                 : null
+//                         };
+//                     });
+//                 }}
+//             />
+//         </>
+//     );
+// }
 
 
 export function GraphSettings() {

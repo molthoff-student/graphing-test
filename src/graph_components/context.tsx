@@ -12,18 +12,26 @@ export type GraphRecord = {
 }
 
 export type GraphTimeLine = {
-    time?: number,
-    till?: number,
+    from?: number;
+    till?: number;
+    diff: number;
 }
 
 export type GraphSetting = {
-    //pointCount: number,
-    zoomLevel: number,
+    pointCount: number,
     widthModifier: number,
     heightModifier: number,
     widthPadding: number,
     heightPadding: number,
-    //chartPadding: number
+}
+
+export type MouseData = {
+    debounce: number | null,
+    cursorX: number,
+    cursorY: number,
+    scroll: number,
+    lmb: boolean,
+    rmb: boolean,
 }
 
 export type GraphInformation = {
@@ -31,6 +39,7 @@ export type GraphInformation = {
     graphTimeLine: GraphTimeLine,
     graphSettings: GraphSetting,
     graphData: GraphPoint[],
+    //mouseData: MouseData,
 };
 
 export type GraphContextType = GraphInformation & {
@@ -38,6 +47,7 @@ export type GraphContextType = GraphInformation & {
     setGraphTimeLine: Dispatch<SetStateAction<GraphTimeLine>>;
     setGraphSettings: Dispatch<SetStateAction<GraphSetting>>;
     setGraphData: Dispatch<SetStateAction<GraphPoint[]>>;
+    //setMouseData: Dispatch<SetStateAction<MouseData>>;
 };
 
 export function GraphContextProvider({ children }: any) {
@@ -46,6 +56,7 @@ export function GraphContextProvider({ children }: any) {
     const [graphTimeLine, setGraphTimeLine] = useState<GraphTimeLine>(DEFAULT_DATES);
     const [graphSettings, setGraphSettings] = useState<GraphSetting>(DEFAULT_SETTINGS);
     const [graphData, setGraphData] = useState([] as GraphPoint[]);
+    //const [mouseData, setMouseData] = useState<MouseData>(DEFAULT_MOUSE);
 
     return (
         <GraphContext.Provider
@@ -53,7 +64,8 @@ export function GraphContextProvider({ children }: any) {
                 allTimeRecord, setAllTimeRecord,
                 graphTimeLine, setGraphTimeLine,
                 graphSettings, setGraphSettings,
-                graphData, setGraphData
+                graphData, setGraphData,
+                //mouseData, setMouseData
             }}
         >
             {children}
@@ -77,9 +89,10 @@ const SEC = 1000;
 const MIN = SEC * 60;
 const HRS = MIN * 60;
 export const DEFAULT_DATES: GraphTimeLine = {
-    time: HRS,
-    till: null
-}
+    from: null,
+    diff: HRS,
+    till: null,
+};
 
 export const DEFAULT_RECORD: GraphRecord = {
     min: { date: 0, value: +Infinity },
@@ -88,9 +101,18 @@ export const DEFAULT_RECORD: GraphRecord = {
 }
 
 export const DEFAULT_SETTINGS: GraphSetting = {
-    zoomLevel: 2000,
-    widthModifier: 0.80,
-    heightModifier: 0.1,
+    pointCount: 2000,
+    widthModifier: 0.8,
+    heightModifier: 0.8,
     widthPadding: 10,
     heightPadding: 10,
+}
+
+export const DEFAULT_MOUSE: MouseData = {
+    debounce: null,
+    cursorX: 0,
+    cursorY: 0,
+    scroll: 0,
+    lmb: false,
+    rmb: false,
 }
